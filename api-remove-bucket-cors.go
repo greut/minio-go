@@ -27,23 +27,23 @@ import (
 )
 
 // RemoveBucketCORS fetches the Bucket CORS metadata
-func (c Client) RemoveBucketCORS(bucketName string) (*BucketInfo, error) {
+func (c Client) RemoveBucketCORS(bucketName string) error {
 	return c.removeBucketCORSWithContext(context.Background(), bucketName)
 }
 
 // removeBucketCORSWithContext
-func (c Client) removeBucketCORSWithContext(ctx context.Context, bucketName string) (*BucketInfo, error) {
+func (c Client) removeBucketCORSWithContext(ctx context.Context, bucketName string) error {
 	if err := s3utils.CheckValidBucketName(bucketName); err != nil {
-		return nil, err
+		return err
 	}
 
 	found, err := c.BucketExists(bucketName)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if !found {
-		return nil, fmt.Errorf("bucket %q not found", bucketName)
+		return fmt.Errorf("bucket %q not found", bucketName)
 	}
 
 	query := url.Values{}
@@ -53,14 +53,12 @@ func (c Client) removeBucketCORSWithContext(ctx context.Context, bucketName stri
 		queryValues: query,
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer closeResponse(resp)
 
-	if resp != nil {
-		if resp.StatusCode != http.StatusNoContent {
-			return httpRespToErrorResponse(resp, bucketName, "")
-		}
+	if resp != nil && resp.StatusCode != http.StatusNoContent {
+		return httpRespToErrorResponse(resp, bucketName, "")
 	}
 
 	return nil
